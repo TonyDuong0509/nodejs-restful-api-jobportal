@@ -53,7 +53,9 @@ const verifyEmail = async (req, res) => {
   const { email, verificationToken } = req.body;
   const user = await User.findOne({ email: email });
   if (!user) {
-    throw new CustomError.Unauthenticated("Verification Failed");
+    throw new CustomError.Unauthenticated(
+      "Email is not correct, please try again"
+    );
   }
   if (user.verificationToken !== verificationToken) {
     throw new CustomError.Unauthenticated("Verification Failed");

@@ -11,7 +11,7 @@ const CategorySchema = new mongoose.Schema(
       lowercase: true,
     },
   },
-  { timestamps }
+  { timestamps: true }
 );
 
 CategorySchema.pre("save", function (next) {

@@ -12,6 +12,7 @@ if (process.env.NODE_ENV === "development") {
 
 // Routers
 const authRouter = require("./routes/authRoute");
+const categoryRouter = require("./routes/categoryRoute");
 
 // Middlewares
 const notFoundMiddleware = require("./middlewares/not-found");
@@ -22,6 +23,7 @@ app.use(cookieParser(process.env.JWT_TOKEN_SECRET));
 app.use(express.static("./public"));
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/category", categoryRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);

@@ -19,7 +19,7 @@ const CompanySchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps }
+  { timestamps: true }
 );
 
 CompanySchema.pre("save", function (next) {
