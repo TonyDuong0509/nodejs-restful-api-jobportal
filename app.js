@@ -1,6 +1,7 @@
 require("express-async-errors");
 const express = require("express");
 const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
 
 const app = express();
 
@@ -10,13 +11,17 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // Routers
+const authRouter = require("./routes/authRoute");
 
 // Middlewares
 const notFoundMiddleware = require("./middlewares/not-found");
 const errorHandlerMiddleware = require("./middlewares/error-handler");
 
 app.use(express.json());
+app.use(cookieParser(process.env.JWT_TOKEN_SECRET));
 app.use(express.static("./public"));
+
+app.use("/api/v1/auth", authRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);

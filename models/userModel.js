@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { isEmail } = require("validator");
+const bcrypt = require("bcrypt");
 
 const UserSchema = new mongoose.Schema(
   {
@@ -40,8 +41,37 @@ const UserSchema = new mongoose.Schema(
       enum: ["jobseeker", "company", "admin"],
       required: true,
     },
+    verificationToken: String,
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verified: Date,
   },
   { timestamps: true }
 );
+
+UserSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+UserSchema.pre("save", function () {
+  const now = new Date();
+  this.updatedAt = now;
+  if (!this.createdAt) {
+    this.createdAt = now;
+  }
+
+  // Convert UTC time to Vietnam time (GMT+7)
+  this.createdAt = new Date(this.createdAt.getTime() + 7 * 60 * 60 * 1000);
+  this.updatedAt = new Date(this.updatedAt.getTime() + 7 * 60 * 60 * 1000);
+});
+
+UserSchema.methods.comparePassword = async function (candidatePassword) {
+  const isMatch = await bcrypt.compare(candidatePassword, this.password);
+  return isMatch;
+};
 
 module.exports = mongoose.model("User", UserSchema);
