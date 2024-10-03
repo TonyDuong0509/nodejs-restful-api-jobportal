@@ -53,6 +53,15 @@ const JobSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    category: {
+      type: mongoose.Types.ObjectId,
+      ref: "Category",
+      required: [true, "Please provide job category"],
+    },
+    company: {
+      type: mongoose.Types.ObjectId,
+      ref: "Company",
+    },
   },
   { timestamps: true }
 );
