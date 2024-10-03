@@ -2,6 +2,7 @@ const Category = require("./../models/categoryModel");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("./../errors");
 const slugify = require("slugify");
+const { queryHelper } = require("./../utils/index");
 
 const createCategory = async (req, res) => {
   const { name } = req.body;
@@ -12,9 +13,8 @@ const createCategory = async (req, res) => {
 };
 
 const getAllCategories = async (req, res) => {
-  const categories = await Category.find({});
-
-  res.status(StatusCodes.OK).json({ categories, count: categories.length });
+  const { docs, page, limit } = await queryHelper(Category, req);
+  res.status(StatusCodes.OK).json({ categories: docs, count: docs.length });
 };
 
 const getSingleCategory = async (req, res) => {

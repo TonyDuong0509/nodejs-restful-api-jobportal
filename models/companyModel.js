@@ -19,7 +19,7 @@ const CompanySchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 CompanySchema.pre("save", function (next) {
