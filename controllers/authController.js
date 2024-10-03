@@ -1,5 +1,7 @@
 const User = require("./../models/userModel");
 const Token = require("./../models/tokenModel");
+const Company = require("./../models/companyModel");
+const Jobseeker = require("./../models/jobseekerModel");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("./../errors");
 const crypto = require("crypto");
@@ -37,6 +39,14 @@ const register = async (req, res) => {
     role: userRole,
     verificationToken,
   });
+
+  if (role === "company") {
+    await Company.create({ user: user._id });
+  }
+
+  if (role === "jobseeker") {
+    await Jobseeker.create({ user: user._id });
+  }
 
   await sendVerificationEmail({
     name: user.name,
@@ -90,10 +100,8 @@ const login = async (req, res) => {
 
   const tokenUser = createTokenUser(user);
 
-  // Create refresh user
   let refreshToken = "";
 
-  // Check for existing token
   const existingToken = await Token.findOne({ user: user._id });
   if (existingToken) {
     const { isValid } = existingToken;
