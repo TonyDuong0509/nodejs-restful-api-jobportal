@@ -32,9 +32,31 @@ const JobSchema = new mongoose.Schema(
       enum: ["Full time", "Part time", "Remote"],
       required: [true, "Please provide job type"],
     },
-    offeredSalary: Number,
+    offeredSalary: {
+      minSalary: {
+        type: Number,
+        min: 0,
+        required: [true, "Please provide min salary"],
+      },
+      maxSalary: {
+        type: Number,
+        min: 0,
+        required: [true, "Please provide max salary"],
+      },
+    },
     experience: {
       type: String,
+      enum: [
+        "No experience",
+        "Less than 1 year",
+        "1 to 2 Year(s)",
+        "2 to 4 Year(s)",
+        "3 to 5 Year(s)",
+        "2 Years",
+        "3 Years",
+        "4 Years",
+        "Over 5 Years",
+      ],
       required: [true, "Please provide job experience"],
     },
     qualification: {
@@ -49,9 +71,13 @@ const JobSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Please provide number of jobseeker"],
     },
-    isActive: {
+    isFull: {
       type: Boolean,
       default: false,
+    },
+    image: {
+      type: String,
+      default: "/uploads/no_image.jpeg",
     },
     category: {
       type: mongoose.Types.ObjectId,

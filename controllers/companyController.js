@@ -1,13 +1,16 @@
-const Company = require("./../models/companyModel");
 const User = require("./../models/userModel");
+const Company = require("./../models/companyModel");
+const Job = require("./../models/jobModel");
+const Category = require("./../models/categoryModel");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("./../errors");
+const slugify = require("slugify");
 const {
   validateMongoDbId,
   checkPermissions,
   queryHelper,
+  handleUploadImage,
 } = require("./../utils/index");
-const path = require("path");
 
 const getAllCompanies = async (req, res) => {
   const populateOptions = {
@@ -96,40 +99,7 @@ const updateProfile = async (req, res) => {
 };
 
 const uploadLogo = async (req, res) => {
-  if (!req.files) {
-    throw new CustomError.BadRequestError("No File Uploaded");
-  }
-  const companyLogo = req.files.image;
-  if (!companyLogo.mimetype.startsWith("image")) {
-    throw new CustomError.BadRequestError("Please Upload Image");
-  }
-
-  const maxSize = 1024 * 1024;
-  if (companyLogo.size > maxSize) {
-    throw new CustomError.BadRequestError(
-      "Please upload image size smaller 1MB"
-    );
-  }
-
-  const imagePath = path.join(
-    __dirname,
-    "./../public/uploads/company/" + companyLogo.name
-  );
-
-  await companyLogo.mv(imagePath);
-
-  const company = await Company.findOneAndUpdate(
-    { user: req.user.userId },
-    {
-      logo: `/uploads/company/${companyLogo.name}`,
-    },
-    { new: true }
-  );
-
-  res.status(StatusCodes.OK).json({
-    message: "Upload image successfully",
-    image: `/uploads/company/${companyLogo.name}`,
-  });
+  await handleUploadImage(req, res, "company", Company);
 };
 
 const deleteCompany = async (req, res) => {
@@ -146,10 +116,155 @@ const deleteCompany = async (req, res) => {
   res.status(StatusCodes.NO_CONTENT).json({ message: "Deleted Successfully" });
 };
 
+const createJob = async (req, res) => {
+  const {
+    title,
+    description,
+    careerLevel,
+    type,
+    offeredSalary,
+    experience,
+    qualification,
+    skillRequirements,
+    quantity,
+    category,
+  } = req.body;
+  const { userId } = req.user;
+  validateMongoDbId(userId);
+
+  const slug = slugify(title, { lower: true });
+
+  const existingCategory = await Category.findById({ _id: category });
+  if (!existingCategory) {
+    throw new CustomError.NotFoundError(
+      `Not found category with this ID: ${category}`
+    );
+  }
+
+  const existingCompany = await User.findById({ _id: userId });
+  if (!existingCompany) {
+    throw new CustomError.NotFoundError(
+      `Not found company with this ID: ${userId}`
+    );
+  }
+  const company = await Company.findOne({ user: existingCompany._id });
+
+  const job = await Job.create({
+    title,
+    slug,
+    description,
+    careerLevel,
+    type,
+    offeredSalary,
+    experience,
+    qualification,
+    skillRequirements,
+    quantity,
+    category: existingCategory,
+    company: userId,
+  });
+
+  company.jobPostings.push(job);
+  await company.save();
+  res.status(StatusCodes.CREATED).json({ job });
+};
+
+const uploadJobImage = async (req, res) => {
+  await handleUploadImage(req, res, "job", Job);
+};
+
+const updateJob = async (req, res) => {
+  const { userId } = req.user;
+  validateMongoDbId(userId);
+  const { jobId } = req.params;
+  validateMongoDbId(jobId);
+  const {
+    title,
+    description,
+    careerLevel,
+    type,
+    offeredSalary,
+    experience,
+    qualification,
+    skillRequirements,
+    quantity,
+    category,
+  } = req.body;
+  const existingCompany = await User.findById({ _id: userId });
+  if (!existingCompany) {
+    throw new CustomError.NotFoundError(
+      `Not found company with this ID: ${userId}`
+    );
+  }
+  const company = await Company.findOne({ user: existingCompany._id });
+  if (!company || !company.jobPostings || company.jobPostings.length === 0) {
+    throw new CustomError.NotFoundError(
+      `No job postings found for company with this ID: ${existingCompany._id}`
+    );
+  }
+
+  const jobIdToUpdate = jobId;
+  if (!company.jobPostings.includes(jobIdToUpdate)) {
+    throw new CustomError.NotFoundError(
+      `Job with ID ${jobIdToUpdate} does not belong to this company.`
+    );
+  }
+
+  const updateJob = await Job.findOneAndUpdate(
+    {
+      _id: jobIdToUpdate,
+    },
+    {
+      title,
+      description,
+      careerLevel,
+      type,
+      offeredSalary,
+      experience,
+      qualification,
+      skillRequirements,
+      quantity,
+      category,
+    },
+    { new: true, runValidators: true }
+  );
+  res.status(StatusCodes.OK).json({ updateJob });
+};
+
+const deleteJob = async (req, res) => {
+  const { userId } = req.user;
+  validateMongoDbId(userId);
+  const { jobId } = req.params;
+  validateMongoDbId(jobId);
+
+  const existingCompany = await User.findById({ _id: userId });
+  const company = await Company.findOne({ user: existingCompany._id });
+  if (!existingCompany) {
+    throw new CustomError.NotFoundError(
+      `Not foud company with this ID: ${userId}`
+    );
+  }
+  if (company.jobPostings.includes(jobId)) {
+    company.jobPostings.pop(jobId);
+    await company.save();
+  }
+  await Job.findByIdAndDelete({
+    _id: jobId,
+  });
+
+  res
+    .status(StatusCodes.NO_CONTENT)
+    .json({ message: "Delete job successfully" });
+};
+
 module.exports = {
   updateProfile,
   uploadLogo,
   getAllCompanies,
   getSingleCompany,
   deleteCompany,
+  createJob,
+  uploadJobImage,
+  updateJob,
+  deleteJob,
 };
