@@ -8,11 +8,13 @@ const CompanySchema = new mongoose.Schema(
     },
     employee: Number,
     website: String,
-    jobPostings: {
-      type: mongoose.Types.ObjectId,
-      ref: "Job",
-      default: null,
-    },
+    jobPostings: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: "Job",
+        default: null,
+      },
+    ],
     user: {
       type: mongoose.Types.ObjectId,
       ref: "User",

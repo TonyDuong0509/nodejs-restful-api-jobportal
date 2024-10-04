@@ -3,12 +3,22 @@ const CustomError = require("./../errors");
 const applyFiltering = (queryObj, req) => {
   const excludeFields = ["page", "sort", "limit", "fields"];
   excludeFields.forEach((el) => delete queryObj[el]);
+
   let queryString = JSON.stringify(queryObj);
   queryString = queryString.replace(
-    /\b(gte|gt|lte|lt)\/b/g,
+    /\b(gte|gt|lte|lt)\b/g,
     (match) => `$${match}`
   );
-  return JSON.parse(queryString);
+
+  const finalQuery = JSON.parse(queryString);
+
+  // Hardcode for search job
+  if (queryObj.title) {
+    const regexTitle = new RegExp(queryObj.title, "i");
+    finalQuery.title = { $regex: regexTitle };
+  }
+
+  return finalQuery;
 };
 
 const applySorting = (query, req) => {
@@ -49,6 +59,7 @@ const queryHelper = async (
   selectedFields = null
 ) => {
   const queryObj = { ...req.query };
+
   const filtering = applyFiltering(queryObj, req);
   let query = Model.find(filtering);
 
@@ -67,19 +78,22 @@ const queryHelper = async (
     skip,
   } = await applyPagination(query, req);
 
+  const modelsCount = await Model.countDocuments(filtering);
+
   if (page) {
-    const modelsCount = await Model.countDocuments({});
     if (skip >= modelsCount) {
       throw new CustomError.BadRequestError("The page does not exist");
     }
   }
+
+  const totalPages = Math.ceil(modelsCount / limit);
 
   if (populateOptions) {
     paginatedQuery.populate(populateOptions);
   }
 
   const docs = await paginatedQuery;
-  return { docs, page, limit };
+  return { docs, page, limit, totalPages };
 };
 
 module.exports = queryHelper;

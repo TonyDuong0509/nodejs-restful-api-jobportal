@@ -16,6 +16,7 @@ const authRouter = require("./routes/authRoute");
 const categoryRouter = require("./routes/categoryRoute");
 const userRouter = require("./routes/userRoute");
 const companyRouter = require("./routes/companyRoute");
+const jobRouter = require("./routes/jobRoute");
 
 // Middlewares
 const notFoundMiddleware = require("./middlewares/not-found");
@@ -30,6 +31,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/category", categoryRouter);
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/company", companyRouter);
+app.use("/api/v1/job", jobRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);

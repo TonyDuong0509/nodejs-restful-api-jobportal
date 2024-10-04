@@ -4,6 +4,7 @@ const createTokenUser = require("./createTokenUser");
 const checkPermissions = require("./checkPermissions");
 const validateMongoDbId = require("./validateMongoDbId");
 const queryHelper = require("./queryHelper");
+const handleUploadImage = require("./handleUploadImage");
 
 module.exports = {
   createJWT,
@@ -14,4 +15,5 @@ module.exports = {
   checkPermissions,
   validateMongoDbId,
   queryHelper,
+  handleUploadImage,
 };
