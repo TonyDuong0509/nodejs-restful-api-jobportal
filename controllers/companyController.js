@@ -11,6 +11,7 @@ const {
   queryHelper,
   handleUploadImage,
 } = require("./../utils/index");
+const { validate } = require("../models/tokenModel");
 
 const getAllCompanies = async (req, res) => {
   const populateOptions = {
@@ -257,6 +258,33 @@ const deleteJob = async (req, res) => {
     .json({ message: "Delete job successfully" });
 };
 
+const getAllJobPostingsOfCompany = async (req, res) => {
+  const { companyId } = req.params;
+  validateMongoDbId(companyId);
+  const existingCompany = await Company.findById({ _id: companyId });
+  if (!existingCompany) {
+    throw new CustomError.NotFoundError(
+      `Not foud company with this ID: ${companyId}`
+    );
+  }
+  if (
+    !existingCompany.jobPostings ||
+    existingCompany.jobPostings.length === 0
+  ) {
+    throw new CustomError.NotFoundError(
+      `This company does not have job postings`
+    );
+  }
+
+  const allJobPostings = await Job.find({
+    _id: { $in: existingCompany.jobPostings },
+  });
+
+  res
+    .status(StatusCodes.OK)
+    .json({ allJobPostings, count: allJobPostings.length });
+};
+
 module.exports = {
   updateProfile,
   uploadLogo,
@@ -267,4 +295,5 @@ module.exports = {
   uploadJobImage,
   updateJob,
   deleteJob,
+  getAllJobPostingsOfCompany,
 };

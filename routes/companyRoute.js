@@ -11,6 +11,7 @@ const {
   uploadJobImage,
   updateJob,
   deleteJob,
+  getAllJobPostingsOfCompany,
 } = require("./../controllers/companyController");
 const {
   authenticateUser,
@@ -18,6 +19,7 @@ const {
 } = require("./../middlewares/authentication");
 
 router.get("/", getAllCompanies);
+router.get("/get-all-job-postings/:companyId", getAllJobPostingsOfCompany);
 router.post(
   "/create-job",
   [authenticateUser, authorizePermissions("company")],

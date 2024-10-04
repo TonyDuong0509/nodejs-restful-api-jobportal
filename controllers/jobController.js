@@ -24,6 +24,9 @@ const getSingleJob = async (req, res) => {
     path: "category",
     select: "_id name",
   });
+  if (!job) {
+    throw new CustomError.NotFoundError(`Not found job with this ID: ${id}`);
+  }
   res.status(StatusCodes.OK).json({ job });
 };
 
