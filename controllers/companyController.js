@@ -11,12 +11,11 @@ const {
   queryHelper,
   handleUploadImage,
 } = require("./../utils/index");
-const { validate } = require("../models/tokenModel");
 
 const getAllCompanies = async (req, res) => {
   const populateOptions = {
     path: "user",
-    select: "name phone address email -_id",
+    select: "name address about -_id",
   };
   const selectedFields = "-_id";
 
@@ -35,7 +34,7 @@ const getSingleCompany = async (req, res) => {
   const company = await Company.findById({ _id: id })
     .populate({
       path: "user",
-      select: "name phone address email about -_id",
+      select: "name about address _id",
     })
     .select("-_id");
   if (!company) {
@@ -43,6 +42,7 @@ const getSingleCompany = async (req, res) => {
       `Not found company with this ID: ${id}`
     );
   }
+
   res.status(StatusCodes.OK).json({ company });
 };
 

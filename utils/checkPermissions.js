@@ -6,4 +6,4 @@ const checkPermissions = (requestUer, resourceUserId) => {
   throw new CustomError.Unauthorized("Not authorized to access this route");
 };
 
-module.exports = checkPermissions;
+module.exports = { checkPermissions };
