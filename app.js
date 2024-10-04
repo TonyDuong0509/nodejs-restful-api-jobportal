@@ -13,10 +13,11 @@ if (process.env.NODE_ENV === "development") {
 
 // Routers
 const authRouter = require("./routes/authRoute");
+const adminRouter = require("./routes/adminRoute.js");
 const categoryRouter = require("./routes/categoryRoute");
-const userRouter = require("./routes/userRoute");
 const companyRouter = require("./routes/companyRoute");
 const jobRouter = require("./routes/jobRoute");
+const jobseekerRouter = require("./routes/jobseekerRoute");
 
 // Middlewares
 const notFoundMiddleware = require("./middlewares/not-found");
@@ -28,10 +29,11 @@ app.use(express.static("./public"));
 app.use(fileUpload());
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/category", categoryRouter);
-app.use("/api/v1/user", userRouter);
 app.use("/api/v1/company", companyRouter);
 app.use("/api/v1/job", jobRouter);
+app.use("/api/v1/jobseeker", jobseekerRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
