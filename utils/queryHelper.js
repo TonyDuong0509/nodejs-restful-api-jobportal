@@ -18,6 +18,11 @@ const applyFiltering = (queryObj, req) => {
     finalQuery.title = { $regex: regexTitle };
   }
 
+  if (queryObj.skills) {
+    const regexSkills = new RegExp(queryObj.skills, "i");
+    finalQuery.skills = { $regex: regexSkills };
+  }
+
   return finalQuery;
 };
 

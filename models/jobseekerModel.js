@@ -12,7 +12,7 @@ const JobseekerSchema = new mongoose.Schema(
       type: String,
       default: "/uploads/no_image.jpeg",
     },
-    skill: [String],
+    skills: [String],
     experience: [
       {
         company: {
@@ -25,7 +25,6 @@ const JobseekerSchema = new mongoose.Schema(
         },
         startDate: {
           type: Date,
-          required: true,
         },
         endDate: Date,
         description: {

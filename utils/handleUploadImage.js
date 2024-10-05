@@ -1,6 +1,7 @@
 const Company = require("./../models/companyModel");
 const Job = require("./../models/jobModel");
 const User = require("./../models/userModel");
+const Jobseeker = require("./../models/jobseekerModel");
 const fs = require("fs");
 
 const { StatusCodes } = require("http-status-codes");
@@ -31,10 +32,11 @@ const handleUploadImage = async (req, res, pathFolder, model) => {
   let existingImageFilePath;
 
   if (model === Company) {
-    const existingCompany = await model.findOne({ user: req.user.userId });
+    const { userId } = req.user;
+    const existingCompany = await model.findOne({ user: userId });
     if (!existingCompany) {
       throw new CustomError.NotFoundError(
-        `Not found company with this ID: ${req.user.userId}`
+        `Not found company with this ID: ${userId}`
       );
     }
 
@@ -43,11 +45,35 @@ const handleUploadImage = async (req, res, pathFolder, model) => {
       : null;
 
     await model.findOneAndUpdate(
-      { user: req.user.userId },
+      { user: userId },
       {
         logo: `/uploads/${pathFolder}/${imageInfo.name}`,
       },
       { new: true }
+    );
+  }
+
+  if (model === Jobseeker) {
+    const { userId } = req.user;
+    const existingJobseeker = await model.findOne({ user: userId });
+    if (!existingJobseeker) {
+      throw new CustomError.NotFoundError(
+        `Not found user with this ID: ${userId}`
+      );
+    }
+
+    existingImageFilePath = existingJobseeker.avatar
+      ? path.join(__dirname, `./../public${existingJobseeker.avatar}`)
+      : null;
+
+    await model.findOneAndUpdate(
+      { user: userId },
+      {
+        avatar: `/uploads/${pathFolder}/${imageInfo.name}`,
+      },
+      {
+        new: true,
+      }
     );
   }
 
