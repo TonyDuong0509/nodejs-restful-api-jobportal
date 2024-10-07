@@ -19,13 +19,15 @@ const getAllCompanies = async (req, res) => {
   };
   const selectedFields = "-_id";
 
-  const { docs, page, limit } = await queryHelper(
+  const { docs, page, limit, totalPages } = await queryHelper(
     Company,
     req,
     populateOptions,
     selectedFields
   );
-  res.status(StatusCodes.OK).json({ companies: docs, count: docs.length });
+  res
+    .status(StatusCodes.OK)
+    .json({ companies: docs, count: docs.length, totalPages });
 };
 
 const getSingleCompany = async (req, res) => {

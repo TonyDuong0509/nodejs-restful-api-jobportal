@@ -15,14 +15,16 @@ const getAllJobseekers = async (req, res) => {
     select: "name phone address about -_id",
   };
   const selectedFields = "-_id";
-  const { docs, page, limit } = await queryHelper(
+  const { docs, page, limit, totalPages } = await queryHelper(
     Jobseeker,
     req,
     populateOptions,
     selectedFields
   );
 
-  res.status(StatusCodes.OK).json({ jobseekers: docs, count: docs.length });
+  res
+    .status(StatusCodes.OK)
+    .json({ jobseekers: docs, count: docs.length, totalPages });
 };
 
 const getSingleJobseeker = async (req, res) => {
