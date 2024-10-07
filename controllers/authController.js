@@ -9,6 +9,7 @@ const {
   attachCookiesToResponse,
   sendVerificationEmail,
   createTokenUser,
+  validateMongoDbId,
 } = require("./../utils");
 
 const register = async (req, res) => {
@@ -109,6 +110,9 @@ const login = async (req, res) => {
       throw new CustomError.Unauthenticated("Invalid Credentials");
     }
     refreshToken = existingToken.refreshToken;
+
+    await User.updateOne({ _id: user._id }, { $set: { isLogged: true } });
+
     attachCookiesToResponse({ res, user: tokenUser, refreshToken });
     res.status(StatusCodes.OK).json({ user: tokenUser });
     return;
@@ -120,13 +124,19 @@ const login = async (req, res) => {
   const userToken = { refreshToken, ip, userAgent, user: user._id };
   await Token.create(userToken);
 
+  await User.updateOne({ _id: user._id }, { $set: { isLogged: true } });
+
   attachCookiesToResponse({ res, user: tokenUser, refreshToken });
 
   res.status(StatusCodes.OK).json({ user: tokenUser });
 };
 
 const logout = async (req, res) => {
-  await Token.findOneAndDelete({ user: req.user.userId });
+  const { userId } = req.user;
+  validateMongoDbId(userId);
+
+  await Token.findOneAndDelete({ user: userId });
+  await User.updateOne({ _id: userId }, { $set: { isLogged: false } });
 
   res.cookie("accessToken", "logout", {
     httpOnly: true,

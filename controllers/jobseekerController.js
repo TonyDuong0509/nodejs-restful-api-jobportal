@@ -25,6 +25,34 @@ const getAllJobseekers = async (req, res) => {
   res.status(StatusCodes.OK).json({ jobseekers: docs, count: docs.length });
 };
 
+const getSingleJobseeker = async (req, res) => {
+  const { userId } = req.user;
+  validateMongoDbId(userId);
+  const { jobseekerId } = req.params;
+  validateMongoDbId(jobseekerId);
+
+  const existingCompany = await User.findById({ _id: userId });
+  if (!existingCompany) {
+    throw new CustomError.NotFoundError(
+      `Not found user with this ID: ${userId}`
+    );
+  }
+
+  const jobseeker = await Jobseeker.findById({ _id: jobseekerId })
+    .populate({
+      path: "user",
+      select: "name address about -_id",
+    })
+    .select("-_id");
+  if (!jobseeker) {
+    throw new CustomError.NotFoundError(
+      `Not found jobseeker with this ID: ${jobseekerId}`
+    );
+  }
+
+  res.status(StatusCodes.OK).json({ jobseeker });
+};
+
 const showMe = async (req, res) => {
   const { userId } = req.user;
   validateMongoDbId(userId);
@@ -76,6 +104,7 @@ const updateProfile = async (req, res) => {
       select: "name phone address email about -_id",
     })
     .select("-_id");
+
   res.status(StatusCodes.OK).json({ jobseeker });
 };
 
@@ -88,4 +117,5 @@ module.exports = {
   updateProfile,
   uploadAvatar,
   getAllJobseekers,
+  getSingleJobseeker,
 };

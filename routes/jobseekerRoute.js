@@ -5,6 +5,7 @@ const {
   updateProfile,
   uploadAvatar,
   getAllJobseekers,
+  getSingleJobseeker,
 } = require("./../controllers/jobseekerController");
 const {
   authenticateUser,
@@ -30,6 +31,11 @@ router.post(
   "/upload-avatar",
   [authenticateUser, authorizePermissions("admin", "jobseeker")],
   uploadAvatar
+);
+router.get(
+  "/:jobseekerId",
+  [authenticateUser, authorizePermissions("admin", "company")],
+  getSingleJobseeker
 );
 
 module.exports = router;
