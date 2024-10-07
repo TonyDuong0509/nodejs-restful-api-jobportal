@@ -72,7 +72,9 @@ const getAllResumes = async (req, res) => {
     null,
     selectedFiles
   );
-  res.status(StatusCodes.OK).json({ resumes: docs, count: docs.length });
+  res
+    .status(StatusCodes.OK)
+    .json({ resumes: docs, count: docs.length, totalPage });
 };
 
 const getSingleResume = async (req, res) => {

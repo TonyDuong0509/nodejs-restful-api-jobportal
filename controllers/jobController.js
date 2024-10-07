@@ -48,7 +48,7 @@ const getSingleJob = async (req, res) => {
         select: "name address about -_id",
       },
     })
-    .select("-_id -isFull -slug -updatedAt");
+    .select("-_id -isFull -updatedAt");
 
   if (!job) {
     throw new CustomError.NotFoundError(`Not found job with this ID: ${id}`);
@@ -97,7 +97,7 @@ const getAllJobsByCategory = async (req, res) => {
       path: "category",
       select: "-_id name",
     })
-    .select("-_id -isFull -slug -updatedAt")
+    .select("-_id -isFull -updatedAt")
     .skip(skip)
     .limit(limit);
 

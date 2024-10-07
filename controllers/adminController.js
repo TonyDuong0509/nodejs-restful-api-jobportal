@@ -8,8 +8,10 @@ const CustomErr = require("./../errors");
 const { queryHelper } = require("./../utils/index");
 
 const getAllUsers = async (req, res) => {
-  const { docs, page, limit } = await queryHelper(User, req);
-  res.status(StatusCodes.OK).json({ users: docs, count: docs.length });
+  const { docs, page, limit, totalPages } = await queryHelper(User, req);
+  res
+    .status(StatusCodes.OK)
+    .json({ users: docs, count: docs.length, totalPages });
 };
 
 const deleteUser = async (req, res) => {
@@ -42,7 +44,7 @@ const createCategory = async (req, res) => {
 
 const getSingleCategory = async (req, res) => {
   const { id } = req.params;
-  const category = await Category.findById({ _id: id });
+  const category = await Category.findById({ _id: id }).select("-_id");
   if (!category) {
     throw new CustomError.NotFoundError(
       `Not found category with this ID: ${id}`
