@@ -18,6 +18,7 @@ const categoryRouter = require("./routes/categoryRoute");
 const companyRouter = require("./routes/companyRoute");
 const jobRouter = require("./routes/jobRoute");
 const jobseekerRouter = require("./routes/jobseekerRoute");
+const resumeRouter = require("./routes/resumeRoute.js");
 
 // Middlewares
 const notFoundMiddleware = require("./middlewares/not-found");
@@ -34,6 +35,7 @@ app.use("/api/v1/category", categoryRouter);
 app.use("/api/v1/company", companyRouter);
 app.use("/api/v1/job", jobRouter);
 app.use("/api/v1/jobseeker", jobseekerRouter);
+app.use("/api/v1/resume", resumeRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);

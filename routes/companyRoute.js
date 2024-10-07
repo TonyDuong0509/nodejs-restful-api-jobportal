@@ -12,6 +12,7 @@ const {
   updateJob,
   deleteJob,
   getAllJobPostingsOfCompany,
+  showMe,
 } = require("./../controllers/companyController");
 const {
   authenticateUser,
@@ -20,29 +21,39 @@ const {
 
 router.get("/", getAllCompanies);
 router.get("/get-all-job-postings/:companyId", getAllJobPostingsOfCompany);
+router.get(
+  "/showMe",
+  [authenticateUser, authorizePermissions("admin", "company")],
+  showMe
+);
 router.post(
   "/create-job",
-  [authenticateUser, authorizePermissions("company")],
+  [authenticateUser, authorizePermissions("admin", "company")],
   createJob
 );
 router.post(
   "/upload-logo",
-  [authenticateUser, authorizePermissions("company")],
+  [authenticateUser, authorizePermissions("admin", "company")],
   uploadLogo
 );
 router.post(
   "/upload-job-image",
-  [authenticateUser, authorizePermissions("company")],
+  [authenticateUser, authorizePermissions("admin", "company")],
   uploadJobImage
 );
 router.patch(
+  "/update-profile",
+  [authenticateUser, authorizePermissions("admin", "company")],
+  updateProfile
+);
+router.patch(
   "/update-job/:jobId",
-  [authenticateUser, authorizePermissions("company")],
+  [authenticateUser, authorizePermissions("admin", "company")],
   updateJob
 );
 router.delete(
   "/delete-job/:jobId",
-  [authenticateUser, authorizePermissions("company")],
+  [authenticateUser, authorizePermissions("admin", "company")],
   deleteJob
 );
 router.get("/:id", getSingleCompany);
@@ -52,7 +63,5 @@ router.delete(
   authorizePermissions("admin"),
   deleteCompany
 );
-
-router.patch("/:userId", authenticateUser, updateProfile);
 
 module.exports = router;

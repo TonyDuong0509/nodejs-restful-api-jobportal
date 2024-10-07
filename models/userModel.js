@@ -41,6 +41,10 @@ const UserSchema = new mongoose.Schema(
       enum: ["jobseeker", "company", "admin"],
       required: true,
     },
+    isLogged: {
+      type: Boolean,
+      default: false,
+    },
     verificationToken: String,
     isVerified: {
       type: Boolean,

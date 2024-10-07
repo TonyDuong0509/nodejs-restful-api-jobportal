@@ -7,12 +7,12 @@ const JobseekerSchema = new mongoose.Schema(
       enum: ["Male", "Femail", "Other"],
     },
     birthday: Date,
-    education: String,
+    education: [String],
     avatar: {
       type: String,
       default: "/uploads/no_image.jpeg",
     },
-    skill: [String],
+    skills: [String],
     experience: [
       {
         company: {
@@ -25,7 +25,6 @@ const JobseekerSchema = new mongoose.Schema(
         },
         startDate: {
           type: Date,
-          required: true,
         },
         endDate: Date,
         description: {
@@ -34,10 +33,6 @@ const JobseekerSchema = new mongoose.Schema(
         },
       },
     ],
-    resume: {
-      type: String,
-      default: null,
-    },
     user: {
       type: mongoose.Types.ObjectId,
       ref: "User",

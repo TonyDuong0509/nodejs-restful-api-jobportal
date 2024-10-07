@@ -42,4 +42,37 @@ const authorizePermissions = (...roles) => {
   };
 };
 
-module.exports = { authenticateUser, authorizePermissions };
+const optionalAutneticatedUser = async (req, res, next) => {
+  const { refreshToken, accessToken } = req.signedCookies;
+
+  try {
+    if (accessToken) {
+      const { payload } = isTokenValid(accessToken);
+      req.user = payload.user;
+    } else if (refreshToken) {
+      const { payload } = isTokenValid(refreshToken);
+      const existingToken = await Token.findOne({
+        user: payload.user.userId,
+        refreshToken: payload.refreshToken,
+      });
+      if (existingToken && existingToken?.isValid()) {
+        attachCookiesToResponse({
+          res,
+          user: payload.user,
+          refreshToken: existingToken.refreshToken,
+        });
+        req.user = payload.user;
+      }
+    }
+  } catch (error) {
+    throw new CustomError.Unauthenticated("Authentication Invalid");
+  }
+
+  next();
+};
+
+module.exports = {
+  authenticateUser,
+  authorizePermissions,
+  optionalAutneticatedUser,
+};

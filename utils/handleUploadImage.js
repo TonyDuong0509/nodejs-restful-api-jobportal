@@ -1,11 +1,14 @@
 const Company = require("./../models/companyModel");
 const Job = require("./../models/jobModel");
 const User = require("./../models/userModel");
+const Jobseeker = require("./../models/jobseekerModel");
+const Resume = require("./../models/resumeModel");
 const fs = require("fs");
 
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("./../errors");
 const path = require("path");
+const validateMongoDbId = require("./validateMongoDbId");
 
 const handleUploadImage = async (req, res, pathFolder, model) => {
   if (!req.files) {
@@ -31,10 +34,11 @@ const handleUploadImage = async (req, res, pathFolder, model) => {
   let existingImageFilePath;
 
   if (model === Company) {
-    const existingCompany = await model.findOne({ user: req.user.userId });
+    const { userId } = req.user;
+    const existingCompany = await model.findOne({ user: userId });
     if (!existingCompany) {
       throw new CustomError.NotFoundError(
-        `Not found company with this ID: ${req.user.userId}`
+        `Not found company with this ID: ${userId}`
       );
     }
 
@@ -43,9 +47,71 @@ const handleUploadImage = async (req, res, pathFolder, model) => {
       : null;
 
     await model.findOneAndUpdate(
-      { user: req.user.userId },
+      { user: userId },
       {
         logo: `/uploads/${pathFolder}/${imageInfo.name}`,
+      },
+      { new: true }
+    );
+  }
+
+  if (model === Jobseeker) {
+    const { userId } = req.user;
+    const existingJobseeker = await model.findOne({ user: userId });
+    if (!existingJobseeker) {
+      throw new CustomError.NotFoundError(
+        `Not found user with this ID: ${userId}`
+      );
+    }
+
+    existingImageFilePath = existingJobseeker.avatar
+      ? path.join(__dirname, `./../public${existingJobseeker.avatar}`)
+      : null;
+
+    await model.findOneAndUpdate(
+      { user: userId },
+      {
+        avatar: `/uploads/${pathFolder}/${imageInfo.name}`,
+      },
+      {
+        new: true,
+      }
+    );
+  }
+
+  if (model === Resume) {
+    const { userId } = req.user;
+    validateMongoDbId(userId);
+    const { resumeId } = req.body;
+    validateMongoDbId(resumeId);
+
+    const existingJobseeker = await User.findById({ _id: userId });
+    if (!existingJobseeker) {
+      throw new CustomError.NotFoundError(
+        `Not found user with this ID: ${userId}`
+      );
+    }
+    const jobseeker = await Jobseeker.findOne({ user: existingJobseeker._id });
+    if (!jobseeker) {
+      throw new CustomError.NotFoundError(
+        `Not found jobseeker with this ID: ${jobseeker._id}`
+      );
+    }
+
+    const resume = await Resume.findById({ _id: resumeId });
+    if (!resume) {
+      throw new CustomError.NotFoundError(
+        `Not found resume with this ID: ${jobseeker._id}`
+      );
+    }
+    existingImageFilePath = resume.avatar
+      ? path.join(__dirname, `./../public/${resume.avatar}`)
+      : null;
+
+    await model.findOneAndUpdate(
+      { _id: resume._id },
+      {
+        avatar: `/uploads/${pathFolder}/${imageInfo.name}`,
       },
       { new: true }
     );

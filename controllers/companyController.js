@@ -34,7 +34,16 @@ const getSingleCompany = async (req, res) => {
   const company = await Company.findById({ _id: id })
     .populate({
       path: "user",
-      select: "name about address _id",
+      select: "name about address -_id",
+    })
+    .populate({
+      path: "jobPostings",
+      select:
+        "title description careerLevel type offeredSalary experience qualification skillRequirements quantity image category -_id",
+      populate: {
+        path: "category",
+        select: "name -_id",
+      },
     })
     .select("-_id");
   if (!company) {
@@ -46,10 +55,54 @@ const getSingleCompany = async (req, res) => {
   res.status(StatusCodes.OK).json({ company });
 };
 
+const showMe = async (req, res) => {
+  const { userId } = req.user;
+  validateMongoDbId(userId);
+  const existingCompany = await User.findById({ _id: userId });
+  if (!existingCompany) {
+    throw new CustomError.NotFoundError(
+      `Not found user with this ID: ${userId}`
+    );
+  }
+  const company = await Company.findOne({ user: existingCompany._id })
+    .populate({
+      path: "user",
+      select: "name phone address email about -_id",
+    })
+    .populate({
+      path: "jobPostings",
+      select:
+        "title description careerLevel type offeredSalary experience qualification skillRequirements quantity image category -_id",
+      populate: {
+        path: "category",
+        select: "name -_id",
+      },
+    })
+    .select("-_id");
+  if (!company) {
+    throw new CustomError.NotFoundError(
+      `Not found company with this ID: ${existingCompany._id}`
+    );
+  }
+  res.status(StatusCodes.OK).json({ company });
+};
+
 const updateProfile = async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.user;
   const { name, phone, address, about, website, logo, employee } = req.body;
   validateMongoDbId(userId);
+  const existingCompany = await User.findById({ _id: userId });
+  if (!existingCompany) {
+    throw new CustomError.NotFoundError(
+      `Not found user with this ID: ${userId}`
+    );
+  }
+  const company = await Company.findOne({ user: existingCompany._id });
+  if (!company) {
+    throw new CustomError.NotFoundError(
+      `Not found company with this ID: ${existingCompany._id}`
+    );
+  }
 
   const session = await User.startSession();
   session.startTransaction();
@@ -57,44 +110,37 @@ const updateProfile = async (req, res) => {
 
   try {
     // Update properties in User
-    const updateUserProps = await User.findOneAndUpdate(
-      { _id: userId },
+    await User.findOneAndUpdate(
+      { _id: existingCompany._id },
       { name, phone, address, about },
       { new: true, runValidators: true, session }
     );
-    if (!updateUserProps) {
-      throw new CustomError.NotFoundError(
-        `Not found user with this ID: ${userId}`
-      );
-    }
 
     // Update properties in Company
-    const updateCompanyProps = await Company.findOneAndUpdate(
-      { user: userId },
+    const updatedCompany = await Company.findOneAndUpdate(
+      { _id: company._id },
       {
         website,
         logo,
         employee,
       },
       { new: true, runValidators: true, session }
-    );
-    if (!updateCompanyProps) {
-      throw new CustomError.NotFoundError(
-        `Not found user with this ID: ${userId}`
-      );
-    }
+    )
+      .populate({
+        path: "user",
+        select: "name phone address email about -_id",
+      })
+      .select("website logo employee -_id");
 
     await session.commitTransaction();
     session.endSession();
 
     res.status(StatusCodes.OK).json({
-      updateUserProps,
-      updateCompanyProps,
+      updatedCompany,
     });
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    console.error("Error: ", error);
     throw new CustomError.BadRequestError("Update failed");
   }
 };
@@ -107,11 +153,7 @@ const deleteCompany = async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
   const company = await Company.findById({ _id: id });
-  if (!company) {
-    throw new CustomError.NotFoundError(
-      `Not found company with this ID: ${id}`
-    );
-  }
+
   await User.findByIdAndDelete({ _id: company.user });
   await Company.deleteOne({ _id: id });
   res.status(StatusCodes.NO_CONTENT).json({ message: "Deleted Successfully" });
@@ -296,4 +338,5 @@ module.exports = {
   updateJob,
   deleteJob,
   getAllJobPostingsOfCompany,
+  showMe,
 };
