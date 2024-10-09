@@ -7,6 +7,7 @@ const queryHelper = require("./queryHelper");
 const handleUploadImage = require("./handleUploadImage");
 const sendResetPasswordEmail = require("./sendResetPasswordEmail");
 const createHash = require("./createHash");
+const sendEmail = require("./sendEmail");
 
 module.exports = {
   createJWT,
@@ -20,4 +21,5 @@ module.exports = {
   handleUploadImage,
   sendResetPasswordEmail,
   createHash,
+  sendEmail,
 };

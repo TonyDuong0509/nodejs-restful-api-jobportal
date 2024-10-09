@@ -6,8 +6,7 @@ const Job = require("./../models/jobModel");
 const Resume = require("./../models/resumeModel");
 const CustomError = require("./../errors");
 const { StatusCodes } = require("http-status-codes");
-const { validateMongoDbId } = require("./../utils/index");
-const { application } = require("express");
+const { validateMongoDbId, sendEmail } = require("./../utils/index");
 
 const applyJob = async (req, res) => {
   const { userId } = req.user;
@@ -50,6 +49,24 @@ const applyJob = async (req, res) => {
     throw new CustomError.BadRequestError("You applied this job");
   }
 
+  const companyOfJob = await User.findById({ _id: job.company });
+  if (!companyOfJob) {
+    throw new CustomError.NotFoundError(
+      `Not foud company user with this ID: ${job.company}`
+    );
+  }
+
+  const web = `${req.protocol}://${req.get("host")}`;
+  await sendEmail({
+    to: companyOfJob.email,
+    subject: "Notification letter from Jobportal",
+    html: `<h2>Hello - ${companyOfJob.name}</h2><br>
+            <p style="color: black; font-size: 20px">The Jobseeker applied your job. Please jobseeker's Resume in ${web}</p><br>
+            <p style="color: black; font-size: 20px">Job Title: ${job.title}.</p><br>
+            <p style="color: black; font-size: 20px">Jobseeker Name: ${existingJobseeker.name}.</p><br>
+          `,
+  });
+
   const application = await Application.create({
     jobseeker: jobseeker._id,
     job: jobId,
@@ -84,7 +101,7 @@ const getAllApplicationsJOfobseeker = async (req, res) => {
   const limit = req.query.limit || 6;
   const skip = (page - 1) * limit;
 
-  if (skip >= modelsCount) {
+  if (skip >= modelsCount && skip !== 0) {
     throw new CustomError.BadRequestError("The page does not exist");
   }
 
@@ -134,7 +151,7 @@ const getAllApplicationsOfCompany = async (req, res) => {
   }
 
   const modelsCount = await Application.countDocuments({
-    company: company._id,
+    company: existingUser._id,
   });
 
   const page = req.query.page || 1;
@@ -148,7 +165,7 @@ const getAllApplicationsOfCompany = async (req, res) => {
   const totalPages = Math.ceil(modelsCount / limit);
 
   const applications = await Application.find({
-    company: company._id,
+    company: existingUser._id,
   })
     .populate({
       path: "job",
@@ -180,6 +197,7 @@ const getAllApplicationsOfCompany = async (req, res) => {
       app.resume.stringUrl
     }`,
   }));
+
   res
     .status(StatusCodes.OK)
     .json({ applications: result, count: result.length, totalPages });
@@ -207,7 +225,7 @@ const companyChangeStatusApplication = async (req, res) => {
   const application = await Application.findOneAndUpdate(
     {
       _id: applicationId,
-      company: company._id,
+      company: existingCompany._id,
     },
     {
       status: status,
@@ -238,6 +256,40 @@ const companyChangeStatusApplication = async (req, res) => {
       );
     }
   }
+
+  const existingJobseekerUser = await Jobseeker.findById({
+    _id: application.jobseeker,
+  });
+  if (!existingJobseekerUser) {
+    throw new CustomError.NotFoundError(
+      `Not found jobseeker with this ID: ${application.jobseeker}`
+    );
+  }
+  const jobseekerAppliedJob = await User.findById({
+    _id: existingJobseekerUser.user,
+  });
+  if (!jobseekerAppliedJob) {
+    throw new CustomError.NotFoundError(
+      `Not found user of jobseeker with this ID: ${existingJobseekerUser._id}`
+    );
+  }
+  const jobApplication = await Job.findById({ _id: application.job });
+  if (!jobApplication) {
+    throw new CustomError.NotFoundError(
+      `Not found job of application with this ID: ${application.job}`
+    );
+  }
+
+  await sendEmail({
+    to: jobseekerAppliedJob.email,
+    subject: "Notification letter from Jobportal",
+    html: `<h2>Hello - ${jobseekerAppliedJob.name}</h2><br>
+            <p style="color: black; font-size: 20px">We want to alert to you about job you applied.</p><br>
+            <p style="color: black; font-size: 20px">Job Title: ${jobApplication.title}.</p><br>
+            <p style="color: black; font-size: 20px">Company Name: ${existingCompany.name}.</p><br>
+            <p style="color: red; font-size: 24px">Result: ${application.status}.</p>
+          `,
+  });
 
   res
     .status(StatusCodes.OK)
