@@ -1,5 +1,6 @@
 const Job = require("./../models/jobModel");
 const Category = require("./../models/categoryModel");
+const Application = require("./../models/applicationModel");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("./../errors");
 const { queryHelper, validateMongoDbId } = require("./../utils/index");
@@ -10,6 +11,7 @@ const getAllJobs = async (req, res) => {
     select: "-_id name",
   };
   const selectedFiles = "-_id -isFull";
+
   const { docs, page, limit, totalPages } = await queryHelper(
     Job,
     req,
@@ -35,7 +37,7 @@ const getAllJobs = async (req, res) => {
 const getSingleJob = async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
-  const job = await Job.findById({ _id: id })
+  const job = await Job.findOne({ _id: id, isFull: false })
     .populate({
       path: "category",
       select: "-_id name",
@@ -75,7 +77,7 @@ const getAllJobsByCategory = async (req, res) => {
     );
   }
 
-  const queryFilter = { category: existingCategory._id };
+  const queryFilter = { category: existingCategory._id, isFull: false };
 
   if (req.query.title) {
     const regexTitle = new RegExp(req.query.title, "i");
@@ -119,4 +121,8 @@ const getAllJobsByCategory = async (req, res) => {
   });
 };
 
-module.exports = { getAllJobs, getSingleJob, getAllJobsByCategory };
+module.exports = {
+  getAllJobs,
+  getSingleJob,
+  getAllJobsByCategory,
+};

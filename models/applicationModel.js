@@ -13,14 +13,20 @@ const ApplicationSchema = new mongoose.Schema(
       required: true,
     },
     resume: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Types.ObjectId,
       ref: "Resume",
+      required: true,
+    },
+
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
       required: true,
     },
     status: {
       type: String,
       enum: ["Pending", "Accepted", "Rejected", "Interviewing", "Hired"],
-      default: "pending",
+      default: "Pending",
     },
   },
   { timestamps: true }
