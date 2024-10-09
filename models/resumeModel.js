@@ -57,6 +57,7 @@ const ResumeSchema = new mongoose.Schema(
         issueDate: Date,
       },
     ],
+    stringUrl: String,
   },
   { timestamps: true }
 );

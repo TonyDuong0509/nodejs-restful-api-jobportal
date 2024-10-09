@@ -2,6 +2,7 @@ const User = require("./../models/userModel");
 const Company = require("./../models/companyModel");
 const Job = require("./../models/jobModel");
 const Category = require("./../models/categoryModel");
+const Application = require("./../models/applicationModel");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("./../errors");
 const slugify = require("slugify");
@@ -320,13 +321,42 @@ const getAllJobPostingsOfCompany = async (req, res) => {
     );
   }
 
-  const allJobPostings = await Job.find({
+  const page = req.query.page || 1;
+  const limit = req.query.limit || 1;
+  const skip = (page - 1) * limit;
+
+  let query = Job.find({
     _id: { $in: existingCompany.jobPostings },
+    isFull: false,
+  })
+    .select("-_id")
+    .skip(skip)
+    .limit(limit);
+
+  const jobs = await query;
+
+  const totalJobs = jobs.length;
+
+  if (skip >= totalJobs) {
+    throw new CustomError.NotFoundError("The page does not exist");
+  }
+
+  const totalPages = totalJobs / limit;
+
+  const jobsData = jobs.map((job) => {
+    const jobData = { ...job.toObject() };
+    const isLoggedIn = req.user ?? null;
+    if (!isLoggedIn) {
+      jobData.offeredSalary = "Please login to view offered salary";
+    }
+    return jobData;
   });
 
-  res
-    .status(StatusCodes.OK)
-    .json({ allJobPostings, count: allJobPostings.length });
+  res.status(StatusCodes.OK).json({
+    allJobPostings: jobsData,
+    count: jobsData.length,
+    totalPages,
+  });
 };
 
 module.exports = {

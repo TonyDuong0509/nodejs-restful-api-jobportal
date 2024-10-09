@@ -23,6 +23,9 @@ const applyFiltering = (queryObj, req) => {
     finalQuery.skills = { $regex: regexSkills };
   }
 
+  // Hard code for Job
+  finalQuery.isFull = false;
+
   return finalQuery;
 };
 

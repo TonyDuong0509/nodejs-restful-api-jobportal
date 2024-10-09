@@ -65,16 +65,22 @@ const getAllResumes = async (req, res) => {
     );
   }
 
-  const selectedFiles = "-_id";
-  const { docs, page, limit, totalPage } = await queryHelper(
-    Resume,
-    req,
-    null,
-    selectedFiles
-  );
+  const page = req.query.page || 1;
+  const limit = req.query.limit || 6;
+  const skip = (page - 1) * limit;
+
+  const resumes = await Resume.find({
+    jobseeker: jobseeker._id,
+  }).select("-_id -jobseeker");
+
+  if (skip >= resumes.length) {
+    throw new CustomError.NotFoundError("The page does not exist");
+  }
+  const totalPages = Math.ceil(resumes.length / limit);
+
   res
     .status(StatusCodes.OK)
-    .json({ resumes: docs, count: docs.length, totalPage });
+    .json({ resumes, count: resumes.length, totalPages });
 };
 
 const getSingleResume = async (req, res) => {
@@ -211,11 +217,9 @@ const generateResumePDF = async (req, res) => {
 
     const resume = await Resume.findById({ _id: resumeId });
     if (!resume) {
-      if (!resume) {
-        throw new CustomError.NotFoundError(
-          `Not found resume with this ID: ${resumeId}`
-        );
-      }
+      throw new CustomError.NotFoundError(
+        `Not found resume with this ID: ${resumeId}`
+      );
     }
 
     const doc = new PDFDocument();
@@ -225,6 +229,19 @@ const generateResumePDF = async (req, res) => {
     );
     const writeStream = fs.createWriteStream(filePath);
     doc.pipe(writeStream);
+
+    // Đường dẫn tương đối để lưu vào DB (bỏ phần /public đi)
+    const relativePath = filePath.replace(
+      path.join(__dirname, `./../public`),
+      ""
+    );
+
+    // Update đường dẫn file PDF vào database
+    await Resume.findByIdAndUpdate(
+      { _id: resumeId },
+      { stringUrl: relativePath }, // Lưu đường dẫn để client có thể tải file về
+      { new: true }
+    );
 
     const fontPath = path.join(__dirname, "./../public/fonts/DejaVuSans.ttf");
     doc.font(fontPath);
@@ -273,7 +290,6 @@ const generateResumePDF = async (req, res) => {
     doc.fontSize(18).text("Skills:", { underline: true }).moveDown();
     doc.fontSize(12).text(resume.skills.join(", ")).moveDown();
 
-    // Thêm phần Projects
     doc.fontSize(18).text("Projects:", { underline: true }).moveDown();
     resume.projects.forEach((project) => {
       doc
@@ -297,30 +313,17 @@ const generateResumePDF = async (req, res) => {
     doc.end();
 
     writeStream.on("finish", () => {
-      res.download(
-        filePath,
-        `${resume.personalDetails.fullname}-resume.pdf`,
-        (err) => {
-          if (err) {
-            console.error("Error downloading file:", err);
-            return res.status(500).json({ message: "Error downloading file" });
-          }
-
-          fs.unlink(filePath, (unlinkErr) => {
-            if (unlinkErr) {
-              console.error("Error deleting file:", unlinkErr);
-            }
-          });
-        }
-      );
+      const downloadUrl = `${req.protocol}://${req.get("host")}${relativePath}`;
+      res.status(200).json({
+        message: "PDF generated successfully",
+        downloadUrl: downloadUrl, // URL để tải file
+      });
     });
 
     writeStream.on("error", (err) => {
       console.error("Error writing PDF file:", err);
       res.status(500).json({ message: "Error generating PDF" });
     });
-
-    res.status(StatusCodes.OK).json({ message: "Generate PDF successfully" });
   } catch (error) {
     console.error(error);
     res
