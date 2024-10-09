@@ -10,6 +10,8 @@ const {
   sendVerificationEmail,
   createTokenUser,
   validateMongoDbId,
+  sendResetPasswordEmail,
+  createHash,
 } = require("./../utils");
 
 const register = async (req, res) => {
@@ -151,4 +153,76 @@ const logout = async (req, res) => {
   res.status(StatusCodes.OK).json({ msg: "User logged out !" });
 };
 
-module.exports = { register, verifyEmail, login, logout };
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    throw new CustomError.BadRequestError("Please provide your email");
+  }
+
+  const user = await User.findOne({ email: email });
+  if (user) {
+    const passwordToken = crypto.randomBytes(40).toString("hex");
+
+    // Send Email
+    const origin = `${req.protocol}://${req.get("host")}`;
+    await sendResetPasswordEmail({
+      name: user.name,
+      email: user.email,
+      token: passwordToken,
+      origin,
+    });
+
+    const tenMinutes = 1000 * 60 * 10;
+    const formatDateTimeVietNam = 1000 * 60 * 60 * 7;
+    const passwordTokenExpires = new Date(
+      Date.now() + formatDateTimeVietNam + tenMinutes
+    );
+    user.passwordToken = createHash(passwordToken);
+    user.passwordTokenExpirationDate = passwordTokenExpires;
+    await user.save();
+  }
+
+  res.status(StatusCodes.OK).json({
+    message:
+      "Please check your email get reset password link, Token will expired in 10 minutes",
+  });
+};
+
+const resetPassword = async (req, res) => {
+  const { token, email, password } = req.body;
+  if (!token || !email || !password) {
+    throw new CustomError.BadRequestError("Please provide all values");
+  }
+
+  const user = await User.findOne({ email: email });
+  if (user) {
+    const currentDateTimeVN = new Date(Date.now() + 1000 * 60 * 60 * 7);
+    if (
+      user.passwordToken === createHash(token) &&
+      user.passwordTokenExpirationDate > currentDateTimeVN
+    ) {
+      user.password = password;
+      user.passwordToken = null;
+      user.passwordTokenExpirationDate = null;
+      await user.save();
+    } else if (
+      user.passwordToken !== createHash(token) ||
+      user.passwordTokenExpirationDate < currentDateTimeVN
+    ) {
+      throw new CustomError.BadRequestError(
+        "Token invalid or Token is expires. Please try again !"
+      );
+    }
+  }
+
+  res.status(StatusCodes.OK).json({ message: "Reset password successfully" });
+};
+
+module.exports = {
+  register,
+  verifyEmail,
+  login,
+  logout,
+  forgotPassword,
+  resetPassword,
+};

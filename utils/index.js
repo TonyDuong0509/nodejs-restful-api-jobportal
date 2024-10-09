@@ -5,6 +5,8 @@ const { checkPermissions } = require("./checkPermissions");
 const validateMongoDbId = require("./validateMongoDbId");
 const queryHelper = require("./queryHelper");
 const handleUploadImage = require("./handleUploadImage");
+const sendResetPasswordEmail = require("./sendResetPasswordEmail");
+const createHash = require("./createHash");
 
 module.exports = {
   createJWT,
@@ -16,4 +18,6 @@ module.exports = {
   validateMongoDbId,
   queryHelper,
   handleUploadImage,
+  sendResetPasswordEmail,
+  createHash,
 };
