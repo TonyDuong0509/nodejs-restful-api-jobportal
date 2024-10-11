@@ -6,6 +6,7 @@ const {
   getAllApplicationsOfCompany,
   companyChangeStatusApplication,
   deleteApplication,
+  getSingleApplication,
 } = require("./../controllers/applicationController");
 const {
   authenticateUser,
@@ -32,10 +33,16 @@ router.patch(
   [authenticateUser, authorizePermissions("admin", "company")],
   companyChangeStatusApplication
 );
-router.delete(
-  "/:applicationId",
-  [authenticateUser, authorizePermissions("admin", "company")],
-  deleteApplication
-);
+
+router
+  .route("/:applicationId")
+  .get(
+    [authenticateUser, authorizePermissions("admin", "company", "jobseeker")],
+    getSingleApplication
+  )
+  .delete(
+    [authenticateUser, authorizePermissions("admin", "company")],
+    deleteApplication
+  );
 
 module.exports = router;

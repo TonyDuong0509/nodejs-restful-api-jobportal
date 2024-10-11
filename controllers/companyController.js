@@ -207,7 +207,7 @@ const createJob = async (req, res) => {
     skillRequirements,
     quantity,
     category: existingCategory,
-    company: userId,
+    company: company,
   });
 
   company.jobPostings.push(job);

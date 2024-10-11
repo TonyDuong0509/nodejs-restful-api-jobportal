@@ -6,11 +6,21 @@ const CustomError = require("./../errors");
 const { queryHelper, validateMongoDbId } = require("./../utils/index");
 
 const getAllJobs = async (req, res) => {
-  const populateOptions = {
-    path: "category",
-    select: "-_id name",
-  };
-  const selectedFiles = "-_id -isFull";
+  const populateOptions = [
+    {
+      path: "category",
+      select: "-_id name",
+    },
+    {
+      path: "company",
+      select: "-_id",
+      populate: {
+        path: "user",
+        select: "name address about -_id",
+      },
+    },
+  ];
+  const selectedFiles = "-_id";
 
   const { docs, page, limit, totalPages } = await queryHelper(
     Job,
@@ -50,7 +60,7 @@ const getSingleJob = async (req, res) => {
         select: "name address about -_id",
       },
     })
-    .select("-_id -isFull -updatedAt");
+    .select("-_id -updatedAt");
 
   if (!job) {
     throw new CustomError.NotFoundError(`Not found job with this ID: ${id}`);
@@ -99,7 +109,15 @@ const getAllJobsByCategory = async (req, res) => {
       path: "category",
       select: "-_id name",
     })
-    .select("-_id -isFull -updatedAt")
+    .populate({
+      path: "company",
+      select: "-_id",
+      populate: {
+        path: "user",
+        select: "name address about -_id",
+      },
+    })
+    .select("-_id -updatedAt")
     .skip(skip)
     .limit(limit);
 

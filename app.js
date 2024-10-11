@@ -20,6 +20,7 @@ const jobRouter = require("./routes/jobRoute");
 const jobseekerRouter = require("./routes/jobseekerRoute");
 const resumeRouter = require("./routes/resumeRoute.js");
 const applicationRouter = require("./routes/applicationRoute.js");
+const notificationRouter = require("./routes/notificationRoute.js");
 
 // Middlewares
 const notFoundMiddleware = require("./middlewares/not-found");
@@ -38,6 +39,7 @@ app.use("/api/v1/job", jobRouter);
 app.use("/api/v1/jobseeker", jobseekerRouter);
 app.use("/api/v1/resume", resumeRouter);
 app.use("/api/v1/application", applicationRouter);
+app.use("/api/v1/notification", notificationRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
