@@ -4,6 +4,9 @@ const Jobseeker = require("./../models/jobseekerModel");
 const Company = require("./../models/companyModel");
 const Job = require("./../models/jobModel");
 const Resume = require("./../models/resumeModel");
+const {
+  createNotification,
+} = require("./../controllers/notificationController");
 const CustomError = require("./../errors");
 const { StatusCodes } = require("http-status-codes");
 const { validateMongoDbId, sendEmail } = require("./../utils/index");
@@ -49,12 +52,24 @@ const applyJob = async (req, res) => {
     throw new CustomError.BadRequestError("You applied this job");
   }
 
-  const companyOfJob = await User.findById({ _id: job.company });
-  if (!companyOfJob) {
+  const existingCompanyOfJob = await Company.findById({ _id: job.company });
+  if (!existingCompanyOfJob) {
     throw new CustomError.NotFoundError(
-      `Not foud company user with this ID: ${job.company}`
+      `Not foud company of job with this ID: ${job.company}`
     );
   }
+  const companyOfJob = await User.findById({ _id: existingCompanyOfJob.user });
+  if (!companyOfJob) {
+    throw new CustomError.NotFoundError(
+      `Not foud company user with this ID: ${existingCompanyOfJob.user}`
+    );
+  }
+
+  await createNotification(
+    companyOfJob._id,
+    `A new Jobseeker is ${existingJobseeker.name} has applied job "${job.title}"`,
+    `/job/${job._id}`
+  );
 
   const web = `${req.protocol}://${req.get("host")}`;
   await sendEmail({
@@ -225,7 +240,7 @@ const companyChangeStatusApplication = async (req, res) => {
   const application = await Application.findOneAndUpdate(
     {
       _id: applicationId,
-      company: existingCompany._id,
+      company: company._id,
     },
     {
       status: status,
@@ -279,6 +294,12 @@ const companyChangeStatusApplication = async (req, res) => {
       `Not found job of application with this ID: ${application.job}`
     );
   }
+
+  await createNotification(
+    jobseekerAppliedJob._id,
+    `"${jobApplication.title}" has a status changed by Company ${existingCompany.name}`,
+    `/application/${application._id}`
+  );
 
   await sendEmail({
     to: jobseekerAppliedJob.email,
@@ -346,10 +367,89 @@ const deleteApplication = async (req, res) => {
     .json({ message: "Delete Application successfully !" });
 };
 
+const getSingleApplication = async (req, res) => {
+  const { userId } = req.user;
+  validateMongoDbId(userId);
+  const { applicationId } = req.params;
+  validateMongoDbId(applicationId);
+
+  const existingUser = await User.findById({ _id: userId });
+  if (!existingUser) {
+    throw new CustomError.NotFoundError(
+      `Not found user with this ID: ${userId}`
+    );
+  }
+  if (existingUser && existingUser.role === "jobseeker") {
+    const jobseeker = await Jobseeker.findOne({ user: existingUser._id });
+    if (!jobseeker) {
+      throw new CustomError.NotFoundError(
+        `Not found jobseeker with this ID: ${existingUser._id}`
+      );
+    }
+    const application = await Application.findById({
+      _id: applicationId,
+    })
+      .populate({
+        path: "job",
+        select: "-_id",
+      })
+      .populate({
+        path: "resume",
+        select: "-_id -jobseeker",
+      })
+      .populate({
+        path: "company",
+        select: "-_id -jobPostings",
+        populate: {
+          path: "user",
+          select: "name address about -_id",
+        },
+      })
+      .select("-_id -jobseeker");
+    if (!application) {
+      throw new CustomError.NotFoundError(
+        `Not found application with this ID: ${applicationId}`
+      );
+    }
+
+    return res.status(StatusCodes.OK).json({ application });
+  }
+
+  if (existingUser && existingUser.role === "company") {
+    const company = await Company.findOne({ user: existingUser._id });
+    if (!company) {
+      throw new CustomError.NotFoundError(
+        `Not found company with this ID: ${existingUser._id}`
+      );
+    }
+    const application = await Application.findById({
+      _id: applicationId,
+    })
+      .populate({
+        path: "job",
+        select: "-_id",
+      })
+      .populate({
+        path: "resume",
+        select: "-_id -jobseeker",
+      })
+      .select("-_id -jobseeker -company");
+
+    if (!application) {
+      throw new CustomError.NotFoundError(
+        `Not found application with this ID: ${applicationId}`
+      );
+    }
+
+    return res.status(StatusCodes.OK).json({ application });
+  }
+};
+
 module.exports = {
   applyJob,
   getAllApplicationsJOfobseeker,
   getAllApplicationsOfCompany,
   companyChangeStatusApplication,
   deleteApplication,
+  getSingleApplication,
 };

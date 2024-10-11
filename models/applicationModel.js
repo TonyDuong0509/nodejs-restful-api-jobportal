@@ -19,7 +19,7 @@ const ApplicationSchema = new mongoose.Schema(
     },
 
     company: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Types.ObjectId,
       ref: "Company",
       required: true,
     },
